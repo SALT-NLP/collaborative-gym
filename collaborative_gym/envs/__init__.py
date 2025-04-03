@@ -8,6 +8,7 @@ __all__ = [
     "CoAnalysisEnv",
     "CoLitSurveyEnv",
     "CoTravelPlanningEnv",
+    "CoLessonPlanningEnv",
     "EnvFactory",
     "EnvConfig",
     "EnvArgs",
