@@ -42,7 +42,7 @@ def process_event_log(session_dir):
 def process_session(result_dir, session_name):
     session_dir = os.path.join(result_dir, session_name)
     task_performance = load_task_performance(session_dir)
-    task_performance = update_task_performance_if_needed(session_dir, task_performance)
+    # task_performance = update_task_performance_if_needed(session_dir, task_performance)
     
     total_case = 1
     complete = task_performance.get("task_completion", 0)
