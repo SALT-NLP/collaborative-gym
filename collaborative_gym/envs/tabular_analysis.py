@@ -516,7 +516,7 @@ class CoAnalysisEnv(CoEnv):
         """Adapted from https://github.com/allenai/discoverybench/blob/main/utils/openai_helpers.py"""
         n_try = 0
         openai_gen_hyp = {
-            "temperature": 1.0 if temperature is None else temperature,
+            "temperature": 0 if temperature is None else temperature,  # Set temperature as 0 to increase stability.
             "max_tokens": 4096,
             "top_p": 1.0,
             "frequency_penalty": 0,
@@ -611,7 +611,7 @@ class CoAnalysisEnv(CoEnv):
         # sub_hypo_json = get_response(client, _prompt, model=llm_used, max_retry=1)
 
         openai_gen_hyp = {  # Follow https://github.com/allenai/discoverybench/blob/main/utils/openai_helpers.py
-            "temperature": 1.0,
+            "temperature": 0,  # Set temperature as 0 to increase stability.
             "max_tokens": 4096,
             "top_p": 1.0,
             "frequency_penalty": 0,
