@@ -1,0 +1,87 @@
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "co-gym"
+version = "0.1.5"
+description = "Framework and toolkits for building and evaluating collaborative agents that can work together with humans"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = "MIT"
+authors = [
+    {name = "Yijia Shao", email = "shaoyj@stanford.edu"},
+    {name = "Vinay Samuel", email = "vsamuel@umd.edu"}
+]
+maintainers = [
+    {name = "Yijia Shao", email = "shaoyj@stanford.edu"},
+    {name = "Vinay Samuel", email = "vsamuel@umd.edu"}
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers", 
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+]
+keywords = ["collaborative-ai", "multi-agent", "human-ai-collaboration", "reinforcement-learning"]
+requires-python = ">=3.11"
+dependencies = [
+    "autogen",  # AG2 fork
+    "ag2[jupyter-executor]",
+    "httpx>=0.23.0,<0.28.0",  # Compatible with litellm
+    "litellm>=1.59.3",  # Explicitly include litellm
+    "knowledge-storm>=0.2.8", 
+    "rstr",
+    "gymnasium",
+    "prompt-toolkit",
+    "websocket-client>=1.7.0",
+    "jupyter",
+    "aact>=0.0.10",
+    "typer",
+    "pydantic>=2.8.0,<3.0.0",
+    "fastapi",
+    "docker",
+    "pygments",
+    "datasets",
+    "scikit-learn",
+    "PyPDF2",
+    "uvicorn[standard]",
+    "arxiv",
+    "googlemaps",
+    "voyageai",
+    "python-multipart",
+    "anthropic",
+    "apscheduler",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=6.0",
+    "black>=22.0", 
+    "flake8>=4.0",
+    "mypy>=0.950",
+]
+docs = [
+    "sphinx>=4.0",
+    "sphinx-rtd-theme>=1.0",
+]
+
+[project.urls]
+Homepage = "https://cogym.saltlab.stanford.edu/"
+Repository = "https://github.com/SALT-NLP/collaborative-gym"
+Documentation = "https://cogym.saltlab.stanford.edu/"
+"Bug Tracker" = "https://github.com/SALT-NLP/collaborative-gym/issues"
+
+[project.scripts]
+co-gym = "collaborative_gym.command:main"
+
+[tool.setuptools.packages.find]
+include = ["collaborative_gym*"]
+exclude = ["tests*"]
+
+[tool.setuptools.package-data]
+collaborative_gym = ["*.json", "*.yaml", "*.yml", "*.toml"]

@@ -1,0 +1,26 @@
+# Include important files
+include README.md
+include LICENSE
+include requirements.txt
+include pyproject.toml
+
+# Include configuration files
+recursive-include collaborative_gym *.json
+recursive-include collaborative_gym *.yaml
+recursive-include collaborative_gym *.yml
+recursive-include collaborative_gym *.toml
+recursive-include collaborative_gym *.cfg
+
+# Include data files if any
+recursive-include collaborative_gym/configs *
+recursive-include collaborative_gym/assets *
+
+# Exclude unwanted files
+global-exclude *.pyc
+global-exclude *.pyo
+global-exclude *.pyd
+global-exclude __pycache__
+global-exclude *.so
+global-exclude .DS_Store
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
