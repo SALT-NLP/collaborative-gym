@@ -7,13 +7,13 @@ import time
 import logging
 from typing import Any, Dict, List, Optional, SupportsFloat
 
-from collaborative_gym.core import CoEnv, ObservationTypes, SendTeammateMessage, WaitTeammateContinue
+from collaborative_gym.core import CoEnv, ObservationTypes
 from collaborative_gym.envs.registry import EnvFactory
 from collaborative_gym.spaces import MultiSpace, UnicodeWithRegexPattern, MAX_UNICODE_LENGTH
 from collaborative_gym.utils.string import post_process_parsed_function_arg
 
 from collaborative_gym.envs.computer_use.desktop_env.desktop_env import DesktopEnv
-from collaborative_gym.envs.computer_use.observation import format_observation, extract_message_from_action
+from collaborative_gym.envs.computer_use.observation import format_observation
 from collaborative_gym.envs.computer_use.utils import parse_desktop_action, format_action_description
 
 logger = logging.getLogger(__name__)
@@ -106,17 +106,13 @@ class CoComputerUseEnv(CoEnv):
         # Initialize shared state
         self.screenshot = None
         self.last_action = None
-        self.team_messages = []
         self.action_history = []
         self.require_a11y_tree = require_a11y_tree
         self.require_terminal = require_terminal
 
         # Define action space
         self.action_space = self._create_action_space()
-        self.private_action_space = MultiSpace([
-            SendTeammateMessage(),
-            WaitTeammateContinue()
-        ])
+        self.private_action_space = MultiSpace(())  # No private actions
 
         # Example trajectory for agents
         self.example_question = "Open a web browser and navigate to Google."
@@ -255,22 +251,8 @@ class CoComputerUseEnv(CoEnv):
         terminated = False
         reward = 0
 
-        # Handle collaborative actions
-        if action_id == "SEND_TEAMMATE_MESSAGE":
-            message = parsed_action["message"]
-            self.team_messages.append({
-                "sender": role,
-                "recipient": "all",
-                "message": message,
-                "timestamp": time.time()
-            })
-            self.last_action = f"{role} sent message: {message}"
-
-        elif action_id == "WAIT_TEAMMATE_CONTINUE":
-            self.last_action = f"{role} is waiting for teammates"
-
         # Handle desktop actions
-        elif action_id == "FINISH":
+        if action_id == "FINISH":
             terminated = True
             self.last_action = f"{role} marked task as finished"
 
@@ -316,7 +298,6 @@ class CoComputerUseEnv(CoEnv):
         # Format observation
         return format_observation(
             screenshot=self.screenshot,
-            team_messages=self.team_messages,
             last_action=self.last_action,
             task_instruction=self.task_instruction,
             team_members=self.team_members,
@@ -330,7 +311,6 @@ class CoComputerUseEnv(CoEnv):
             "screenshot": ObservationTypes.NO_RENDER,
             "last_action": ObservationTypes.NO_RENDER,
             "task_instruction": ObservationTypes.NO_RENDER,
-            "team_messages": ObservationTypes.NO_RENDER,
         }
 
         if self.require_a11y_tree:
@@ -346,7 +326,6 @@ class CoComputerUseEnv(CoEnv):
         # Reset shared state
         self.screenshot = None
         self.last_action = None
-        self.team_messages = []
         self.action_history = []
 
         # Reset desktop environment if available
