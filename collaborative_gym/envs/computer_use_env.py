@@ -349,54 +349,29 @@ class CoComputerUseEnv(CoEnv):
                 logger.error(f"Error closing desktop environment: {e}")
 
     def evaluate_task_performance(self) -> Dict:
-        """Evaluate task performance metrics.
-
-        Returns:
-            Dict containing both collaborative metrics and task success metrics.
-            - task_success: float between 0.0-1.0 from OSWorld evaluation
-            - task_completed: bool, True if task_success >= 0.5
-            - collaborative metrics: team performance indicators
-        """
-        metrics = {
-            # Collaborative metrics
-            "collaborative": {
-                "total_actions": len(self.action_history),
-                "messages_sent": len(self.team_messages),
-                "task_marked_finished": any(a["action"] == "FINISH()" for a in self.action_history)
-            }
-        }
-
-        # OSWorld task evaluation
+        """Evaluate task performance metrics."""
+        # Get OSWorld evaluation score if available
+        task_score = 0.0
         if self.desktop_env and hasattr(self.desktop_env, 'evaluate') and hasattr(self.desktop_env, 'evaluator'):
             try:
                 # OSWorld evaluate() returns float between 0.0 and 1.0
-                task_score = self.desktop_env.evaluate()
-                metrics["task_success"] = float(task_score)
-
-                # Consider task completed if score >= 0.5
-                # This threshold works for both binary (0/1) and fuzzy (0-1) metrics
-                metrics["task_completed"] = task_score >= 0.5
-
-                # Add evaluator details
-                if self.desktop_env.evaluator:
-                    metrics["evaluator_type"] = self.desktop_env.evaluator.get('func', 'unknown')
-                    if isinstance(metrics["evaluator_type"], list):
-                        metrics["evaluator_type"] = ','.join(metrics["evaluator_type"])
-                    metrics["evaluator_conjunction"] = self.desktop_env.evaluator.get('conj', 'single')
-
+                task_score = float(self.desktop_env.evaluate())
             except Exception as e:
                 logger.error(f"Failed to evaluate task: {e}")
-                metrics["task_success"] = 0.0
-                metrics["task_completed"] = False
-                metrics["evaluation_error"] = str(e)
-        else:
-            # Fallback when no OSWorld evaluation available
-            # Use simple heuristic: 1.0 if FINISH was called, 0.0 otherwise
-            metrics["task_success"] = 1.0 if metrics["collaborative"]["task_marked_finished"] else 0.0
-            metrics["task_completed"] = metrics["collaborative"]["task_marked_finished"]
-            metrics["evaluator_type"] = "finish_action_only"
 
-        # Combined score for Co-Gym evaluation (similar to CollabScore)
-        metrics["collab_score"] = metrics["task_success"] if metrics["task_completed"] else 0.0
+        # Check if FINISH action was called
+        finished = any(a["action"] == "FINISH()" for a in self.action_history)
 
-        return metrics
+        # Build metrics matching other environments' structure
+        performance = {
+            "outcome": self.last_action or "No actions taken",
+            "query": self.task_instruction,
+            "task_completion": 1 if (task_score >= 0.5 or finished) else 0,
+            "performance_rating": task_score if task_score > 0 else (1.0 if finished else 0.0)
+        }
+
+        # Optionally include action count for analysis
+        if self.action_history:
+            performance["total_actions"] = len(self.action_history)
+
+        return performance
