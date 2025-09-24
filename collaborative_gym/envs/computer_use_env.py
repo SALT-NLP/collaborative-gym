@@ -1,5 +1,6 @@
 """Computer use environment for collaborative desktop automation tasks."""
 
+import base64
 import json
 import os
 import re
@@ -105,7 +106,6 @@ class CoComputerUseEnv(CoEnv):
 
         # Initialize shared state
         self.screenshot = None
-        self.last_action = None
         self.action_history = []
         self.require_a11y_tree = require_a11y_tree
         self.require_terminal = require_terminal
@@ -120,17 +120,17 @@ class CoComputerUseEnv(CoEnv):
             (
                 "I need to open a web browser. Let me click on the browser icon.",
                 "CLICK(x=50, y=100)",
-                {"screenshot": "[Browser opening]", "last_action": "Clicked at (50, 100)"}
+                {"screenshot": "[Browser opening]"}
             ),
             (
                 "Now I'll type the Google URL in the address bar.",
                 "TYPE(text='www.google.com')",
-                {"screenshot": "[Browser with URL]", "last_action": "Typed: www.google.com"}
+                {"screenshot": "[Browser with URL]"}
             ),
             (
                 "Let me press Enter to navigate.",
                 "KEY(key='enter')",
-                {"screenshot": "[Google homepage]", "last_action": "Pressed key: enter"}
+                {"screenshot": "[Google homepage]"}
             )
         ]
 
@@ -254,12 +254,10 @@ class CoComputerUseEnv(CoEnv):
         # Handle desktop actions
         if action_id == "FINISH":
             terminated = True
-            self.last_action = f"{role} marked task as finished"
 
         elif action_id == "SCREENSHOT":
             if self.desktop_env:
                 self.screenshot = self.desktop_env.controller.get_screenshot()
-            self.last_action = f"{role} captured screenshot"
 
         else:
             # Convert action to OSWorld format and execute
@@ -270,19 +268,11 @@ class CoComputerUseEnv(CoEnv):
                     obs, _, _, _ = self.desktop_env.step(desktop_action)
                     self.screenshot = obs.get("screenshot")
 
-                    # Format action description
-                    self.last_action = f"{role}: {format_action_description(str(action_id), desktop_action)}"
                 else:
                     return self.handle_action_error(f"Failed to parse desktop action: {action}", private)
-            else:
-                self.last_action = f"{role}: {action} (desktop environment not available)"
 
-        # Record action in history
-        self.action_history.append({
-            "role": role,
-            "action": action,
-            "timestamp": time.time()
-        })
+        # Record action in history (just the action for completion checking)
+        self.action_history.append(action)
 
         info["action_end_time"] = time.time()
         return self.get_obs(), reward, terminated, private, info
@@ -298,8 +288,6 @@ class CoComputerUseEnv(CoEnv):
         # Format observation
         return format_observation(
             screenshot=self.screenshot,
-            last_action=self.last_action,
-            task_instruction=self.task_instruction,
             team_members=self.team_members,
             accessibility_tree=desktop_obs.get("accessibility_tree") if self.require_a11y_tree else None,
             terminal_output=desktop_obs.get("terminal") if self.require_terminal else None
@@ -309,8 +297,6 @@ class CoComputerUseEnv(CoEnv):
         """Return observation types for GUI rendering."""
         obs_types = {
             "screenshot": ObservationTypes.NO_RENDER,
-            "last_action": ObservationTypes.NO_RENDER,
-            "task_instruction": ObservationTypes.NO_RENDER,
         }
 
         if self.require_a11y_tree:
@@ -325,7 +311,6 @@ class CoComputerUseEnv(CoEnv):
         """Reset environment to initial state."""
         # Reset shared state
         self.screenshot = None
-        self.last_action = None
         self.action_history = []
 
         # Reset desktop environment if available
@@ -360,11 +345,11 @@ class CoComputerUseEnv(CoEnv):
             task_score = float(self.desktop_env.evaluate())
 
         # Check if FINISH action was called
-        finished = any(a["action"] == "FINISH()" for a in self.action_history)
+        finished = any(a == "FINISH()" for a in self.action_history)
 
         # Build metrics matching other environments' structure
         performance = {
-            "outcome": self.last_action or "No actions taken",
+            "outcome": base64.b64encode(self.screenshot).decode('utf-8') if self.screenshot else None,
             "query": self.task_instruction,
             "task_completion": 1 if (task_score >= 0.5 or finished) else 0,
             "performance_rating": task_score if task_score > 0 else (1.0 if finished else 0.0)

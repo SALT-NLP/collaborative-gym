@@ -6,8 +6,6 @@ import base64
 
 def format_observation(
     screenshot: Optional[Any],
-    last_action: Optional[str],
-    task_instruction: str,
     team_members: List[str],
     accessibility_tree: Optional[str] = None,
     terminal_output: Optional[str] = None
@@ -15,9 +13,7 @@ def format_observation(
     """Format observation for the computer use environment.
 
     Args:
-        screenshot: Current desktop screenshot (can be numpy array or base64 string)
-        last_action: Description of the last action taken
-        task_instruction: Original task instruction
+        screenshot: Current desktop screenshot (bytes from OSWorld)
         team_members: List of team member names
         accessibility_tree: Optional accessibility tree data
         terminal_output: Optional terminal output
@@ -25,20 +21,12 @@ def format_observation(
     Returns:
         Formatted observation dictionary with all public components
     """
-    # Convert screenshot to base64 if needed
-    screenshot_data = screenshot
-    if screenshot is not None and hasattr(screenshot, 'shape'):
-        # If it's a numpy array, convert to base64
-        import cv2
-        import numpy as np
-        _, buffer = cv2.imencode('.png', screenshot)
-        screenshot_data = base64.b64encode(buffer).decode('utf-8')
+    # OSWorld always returns bytes, encode to base64
+    screenshot_data = base64.b64encode(screenshot).decode('utf-8') if screenshot else None
 
-    # Build observation (all public, visible to all team members)
+    # Build observation with only workspace state
     obs = {
         "screenshot": screenshot_data,
-        "last_action": last_action or "No action taken yet",
-        "task_instruction": task_instruction
     }
 
     # Add optional components if available
