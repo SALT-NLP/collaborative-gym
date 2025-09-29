@@ -21,3 +21,12 @@ voyageai
 python-multipart
 anthropic
 apscheduler
+pyautogui~=0.9.54
+opencv-python~=4.8.1.78
+Pillow~=11.0.0
+fabric
+pynput~=1.7.6
+psutil~=5.9.6
+lxml
+cssselect
+xmltodict
