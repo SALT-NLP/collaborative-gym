@@ -127,21 +127,82 @@ class CoEnv:
 
         # Validate action against action spaces
         private = False
-        if self.private_action_space.contains(action):
+        sanitized = action.strip()
+        if self.private_action_space.contains(sanitized):
             private = True
-        elif not self.action_space.contains(action):
-            return (
-                {},
-                True,
-                None,
-                f"{action!r} invalid. Please strictly follow the action space specifications.",
-            )
+        elif not self.action_space.contains(sanitized):
+            # Minimal, defensive sanitation to handle edge cases like
+            # "... Action\nEDITOR_UPDATE(text=...)" or extra prose around the action
+            try:
+                candidate = sanitized
+                # Find the first ALL-CAPS function call, e.g., EDITOR_UPDATE(
+                m = re.search(r"[A-Z][A-Z_]+\(", candidate)
+                if m:
+                    start = m.start()
+                    end = candidate.rfind(")")
+                    if end != -1 and end > start:
+                        candidate = candidate[start : end + 1]
+                    else:
+                        candidate = candidate[start:]
+                    # Drop any trailing "\nThought:" section if present
+                    t_idx = candidate.find("\nThought:")
+                    if t_idx != -1:
+                        candidate = candidate[:t_idx].strip()
+                    candidate = candidate.replace("\\(", "(").replace("\\)", ")")
+
+                # Re-check spaces with the sanitized candidate
+                if self.private_action_space.contains(candidate):
+                    private = True
+                    sanitized = candidate
+                elif self.action_space.contains(candidate):
+                    sanitized = candidate
+                else:
+                    # Fallback: try to locate any valid action by searching each action regex
+                    best_match = None
+                    best_private = False
+                    # Search private actions first to preserve privacy semantics
+                    for space, is_private in (
+                        [(s, True) for s in self.private_action_space]
+                        + [(s, False) for s in self.action_space]
+                    ):
+                        try:
+                            # Remove anchors to allow in-string matching
+                            pattern_str = space.pattern.pattern
+                            pattern_str = pattern_str.lstrip('^').rstrip('$')
+                            search_pat = re.compile(pattern_str, re.DOTALL)
+                            m = search_pat.search(sanitized)
+                            if m:
+                                # Keep earliest match
+                                if (best_match is None) or (m.start() < best_match.start()):
+                                    best_match = m
+                                    best_private = is_private
+                        except Exception:
+                            continue
+                    if best_match is not None:
+                        candidate2 = best_match.group(0).strip()
+                        if best_private:
+                            private = True
+                        sanitized = candidate2
+                    else:
+                        return (
+                            {},
+                            True,
+                            None,
+                            f"{action!r} invalid. Please strictly follow the action space specifications.",
+                        )
+            except Exception:
+                return (
+                    {},
+                    True,
+                    None,
+                    f"{action!r} invalid. Please strictly follow the action space specifications.",
+                )
 
         # Parse action parameters using regex pattern
         action_space = self.private_action_space if private else self.action_space
         parsed_action = None
         for space in action_space:
-            parsed_action = space.parse(action)
+            parsed_action = space.parse(sanitized)
             if parsed_action is not None:  # {} is also a valid parsed action
                 return parsed_action, private, space.machine_readable_identifier, None
 

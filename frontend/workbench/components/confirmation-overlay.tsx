@@ -26,9 +26,23 @@ export default function ConfirmationOverlay({
   }
   // We only consider the first item
   const firstPending = pendingConfirmations[0];
-  // We expect the action for confirmation to be in the form: EDITOR_UPDATE(text="agent's test")
-  const pendingActionMatch = firstPending.action.match(/EDITOR_UPDATE\(text="([^"]+)"\)/);
-  const newText = pendingActionMatch ? pendingActionMatch[1] : '';
+  // Try to robustly extract the text inside EDITOR_UPDATE(text=...)
+  // Handle multi-line content and optional quotes
+  let newText = '';
+  const marker = 'EDITOR_UPDATE(text=';
+  const idx = firstPending.action.indexOf(marker);
+  if (idx !== -1) {
+    let rest = firstPending.action.slice(idx + marker.length);
+    const closingIdx = rest.lastIndexOf(')');
+    if (closingIdx !== -1) {
+      rest = rest.slice(0, closingIdx);
+    }
+    rest = rest.trim();
+    if ((rest.startsWith('"') && rest.endsWith('"')) || (rest.startsWith("'") && rest.endsWith("'"))) {
+      rest = rest.slice(1, -1);
+    }
+    newText = rest;
+  }
   const requestId = firstPending.id;
 
   const diffs = diffChars(textEditorContent, newText);
