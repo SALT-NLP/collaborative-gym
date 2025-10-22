@@ -27,33 +27,31 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={cn(
-          'font-sans antialiased',
-          GeistSans.variable,
-          GeistMono.variable
-        )}
+    <div
+      className={cn(
+        'font-sans antialiased',
+        GeistSans.variable,
+        GeistMono.variable
+      )}
+    >
+      <Providers
+        attribute="class"
+        defaultTheme="system"
+        enableSystem
+        disableTransitionOnChange
       >
-        <Providers
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-         <div className="flex min-h-screen">
-            {/* Sidebar */}
-            <VerticalMenu />
-            {/* Divider */}
-            <div className="w-px bg-divider"></div>
-            {/* Main Content */}
-            <main className="flex-1 flex flex-col">
-              {children}
-            </main>
-          </div>
-          <TailwindIndicator />
-        </Providers>
-      </body>
-    </html>
+        <div className="flex min-h-screen">
+          {/* Sidebar */}
+          <VerticalMenu />
+          {/* Divider */}
+          <div className="w-px bg-divider"></div>
+          {/* Main Content */}
+          <main className="flex-1 flex flex-col">
+            {children}
+          </main>
+        </div>
+        <TailwindIndicator />
+      </Providers>
+    </div>
   )
 }

@@ -16,8 +16,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body>{children}</body>
-      <Toaster />
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }
