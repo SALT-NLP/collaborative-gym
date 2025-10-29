@@ -210,23 +210,31 @@ class CollaborativeAgent:
             scratchpad_update_prompt = self.format_update_scratchpad_prompt(
                 obs=observation, chat_history=chat_history
             )
-            scratchpad_update_prompt_response = self.lm(
-                prompt=scratchpad_update_prompt, temperature=0, max_tokens=4000
-            )
-            scratchpad_update = scratchpad_update_prompt_response[0].strip()
-            scratchpad_update = scratchpad_update[
-                scratchpad_update.find("Action:") + len("Action:") :
-            ].strip()
-            self.scratchpad.execute_action(scratchpad_update)
+            try:
+                scratchpad_update_prompt_response = self.lm(
+                    prompt=scratchpad_update_prompt, temperature=0, max_tokens=4000
+                )
+                scratchpad_update = scratchpad_update_prompt_response[0].strip()
+                if "Action:" in scratchpad_update:
+                    scratchpad_update = scratchpad_update[
+                        scratchpad_update.find("Action:") + len("Action:") :
+                    ].strip()
+                self.scratchpad.execute_action(scratchpad_update)
+            except Exception as e:
+                logger.error(f"Error updating scratchpad: {e}")
 
             # Take the next action
-            plan_prompt = self.format_plan_prompt(
-                obs=observation, chat_history=chat_history
-            )
-            plan_prompt_response = self.lm(
-                prompt=plan_prompt, temperature=0, max_tokens=100
-            )
-            plan = plan_prompt_response[0].strip()
+            try:
+                plan_prompt = self.format_plan_prompt(
+                    obs=observation, chat_history=chat_history
+                )
+                plan_prompt_response = self.lm(
+                    prompt=plan_prompt, temperature=0, max_tokens=1000
+                )
+                plan = plan_prompt_response[0].strip()
+            except Exception as e:
+                logger.error(f"Error generating plan: {e}")
+                plan = "2"  # Default to taking task action
             if "Plan:" in plan:
                 plan = plan[plan.find("Plan:") + len("Plan:") :].strip()
             else:
@@ -239,7 +247,8 @@ class CollaborativeAgent:
                     prompt=message_prompt, temperature=0, max_tokens=4000
                 )
                 message = message_prompt_response[0].strip()
-                message = message[message.find("Message:") + len("Message:") :].strip()
+                if "Message:" in message:
+                    message = message[message.find("Message:") + len("Message:") :].strip()
                 action = self.collaboration_acts[
                     "send_teammate_message"
                 ].construct_action_string_from_params(message=message)
@@ -253,7 +262,8 @@ class CollaborativeAgent:
                     prompt=act_prompt, temperature=0, max_tokens=4000
                 )
                 action = act_prompt_response[0].strip()
-                action = action[action.find("Action:") + len("Action:") :].strip()
+                if "Action:" in action:
+                    action = action[action.find("Action:") + len("Action:") :].strip()
                 # Hacky post-processing:
                 # Assume the action is in a function call format and the function name starts with a capital letter.
                 if "\nThought:" in action:
@@ -287,9 +297,14 @@ class CollaborativeAgent:
                 ].construct_action_string_from_params()
         except Exception as e:
             logger.error(f"Error generating action: {e}")
+            # action = self.collaboration_acts[
+            #     "wait_teammate_continue"
+            # ].construct_action_string_from_params()
             action = self.collaboration_acts[
-                "wait_teammate_continue"
-            ].construct_action_string_from_params()
+                "send_teammate_message"
+            ].construct_action_string_from_params(
+                message="I'm sorry, I encountered an error while processing. Could you take an action yourself?"
+            )
 
         logger.info(f"Collaborative Agent with Situational Planning action: {action}")
         self.action_history.append(action)
