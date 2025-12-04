@@ -10,6 +10,7 @@
 
 **Latest News** 🔥
 
+- [2025/12] 📢 **New Release: Real User Trajectories Dataset** We’ve released a subset of real user trajectories collected through our platform to support research on human-agent collaboration. Download the dataset [here](https://huggingface.co/datasets/SALT-NLP/cogym-real-trajectories)!
 - [2025/02] 🎉 Co-Gym (real) is now publicly available! **Visit [our website](https://cogym.saltlab.stanford.edu/) to use collaborative agents for travel planning and tabular analysis.** We've also open-sourced our UI components for developers to build upon.
 - [2025/01] Initial release with arXiv [preprint](https://arxiv.org/abs/2412.15701) (check out our [Twitter thread](https://x.com/EchoShao8899/status/1880291718496670097) for walkthrough video). We are working on releasing Co-Gym (real) web preview for in-the-wild study, alongside tools for developing collaborative agents locally.
 
