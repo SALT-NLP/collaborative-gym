@@ -1,4 +1,4 @@
-pyautogen==0.3.2
+ag2==0.3.2
 knowledge-storm==1.1.0
 rstr
 gymnasium
