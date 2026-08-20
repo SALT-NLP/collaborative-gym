@@ -10,6 +10,7 @@
 
 **Latest News** 🔥
 
+- [2026/08] 🎉 **CollabSkill** We introduce **CollabSkill**, a Bayesian rating system that decouples the contribution of the human and the agent within the same collaborative episode, so agents and humans can be ranked on independent skill ladders instead of one entangled task score. Read the [paper](https://arxiv.org/abs/2606.09833), try the [`collaborative_gym.eval.collabskill`](#collabskill-decoupling-human-and-agent-contributions) module, and explore the [collaboration trajectories](https://huggingface.co/datasets/SALT-NLP/cogym-collabskill-trajectories) we collected across 386 sessions and 93 workers.
 - [2025/12] 📢 **New Release: Real User Trajectories Dataset** We’ve released a subset of real user trajectories collected through our platform to support research on human-agent collaboration. Download the dataset [here](https://huggingface.co/datasets/SALT-NLP/cogym-real-trajectories)!
 - [2025/02] 🎉 Co-Gym (real) is now publicly available! **Visit [our website](https://cogym.saltlab.stanford.edu/) to use collaborative agents for travel planning and tabular analysis.** We've also open-sourced our UI components for developers to build upon.
 - [2025/01] Initial release with arXiv [preprint](https://arxiv.org/abs/2412.15701) (check out our [Twitter thread](https://x.com/EchoShao8899/status/1880291718496670097) for walkthrough video). We are working on releasing Co-Gym (real) web preview for in-the-wild study, alongside tools for developing collaborative agents locally.
@@ -144,6 +145,23 @@ Co-Gym analyzes the collaboration process along the following dimensions:
 - **Controlled Autonomy:** We measure this dimension by (1) counting the agent's confirmation questions that effectively elicit a human response and (2) counting instances where the human verbally intervenes to halt the agent's actions.
   - To compute, run: `python -m collaborative_gym.eval.controlled_autonomy --result-dir {result_dir_that_include_result_folder_for_each_instance}`
 
+### CollabSkill: Decoupling Human and Agent Contributions
+A single task score conflates how much of the outcome came from the agent versus the human. [`collaborative_gym.eval.collabskill`](collaborative_gym/eval/collabskill.py) implements **CollabSkill** ([paper](https://arxiv.org/abs/2606.09833)), a TrueSkill-style Bayesian rating system that treats every session score as `y = skill_agent + skill_human + noise` and solves for each agent's and human's latent skill separately, so agents and humans end up on independent, comparable skill ladders. The usage pattern mirrors the [`trueskill`](https://pypi.org/project/trueskill/) package:
+
+```python
+from collaborative_gym.eval.collabskill import CollabSkill
+
+model = CollabSkill()  # mu0=0, sigma0=1, beta=1, k=3 by default (matches the paper)
+model.add_observation(agent_id="claude_code", human_id="user_1", score=3.0)
+model.add_observation(agent_id="codex", human_id="user_1", score=2.0)
+model.add_observation(agent_id="claude_code", human_id="user_2", score=1.0)
+
+model.leaderboard("agent")  # -> [{"rank": 1, "entity_id": "claude_code", "mu": ..., "sigma": ..., "n": 2, "conservative": ...}, ...]
+model.leaderboard("human")
+```
+
+`add_observation` calls are order-independent, so you can stream in sessions as they complete and re-solve at any time via `rate()`/`leaderboard()`. `k` (the conservative-score penalty) is configurable, as is `sigma_mode`: `"exact"` (default) solves for `sigma` exactly and is fine for the hundreds-to-thousands of agents/humans a typical study produces, while `"hutchinson"` trades exactness for a stochastic estimator (tune with `hutch_probes`/`hutch_seed`) that scales to much larger entity pools. We used this exact model to derive the skill ladders in the CollabSkill paper from the [collaboration trajectories dataset](https://huggingface.co/datasets/SALT-NLP/cogym-collabskill-trajectories) (386 sessions, 93 workers, 5 agents, 10 O*NET occupational sectors) — see `tests/test_collabskill.py::test_reproduces_released_collabskill_ratings` for a full reproduction.
+
 
 ## Add a New Agent
 The current codebase supports three agents in `demo_agent/`:
@@ -206,7 +224,7 @@ We are very grateful to the following amazing designers who have contributed to 
 - Logo design: Long Lin
 
 ## Citation
-Please cite our paper if you use this code or part of it in your work:
+Please cite our papers if you use this code or part of it in your work:
 ```
 @misc{shao2025collaborativegym,
       title={Collaborative Gym: A Framework for Enabling and Evaluating Human-Agent Collaboration}, 
@@ -216,5 +234,13 @@ Please cite our paper if you use this code or part of it in your work:
       archivePrefix={arXiv},
       primaryClass={cs.AI},
       url={https://arxiv.org/abs/2412.15701}, 
+}
+
+@inproceedings{shao2026collabskill,
+  title     = {CollabSkill: Evaluating Human-Agent Collaboration on Real-World Tasks},
+  author    = {Shao, Yijia and Wang, Zora Zhiruo and Ahuja, Neel and Wang, Yicheng and Liu, Bowen and Yang, Diyi},
+  booktitle = {Third Conference on Language Modeling},
+  year      = {2026},
+  url       = {https://arxiv.org/abs/2606.09833}
 }
 ```
