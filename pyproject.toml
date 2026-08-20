@@ -30,6 +30,7 @@ classifiers = [
 keywords = ["collaborative-ai", "multi-agent", "human-ai-collaboration", "reinforcement-learning"]
 requires-python = ">=3.11"
 dependencies = [
+    "numpy",
     "pyautogen==0.3.2",
     "httpx>=0.25.0,<0.28.0",
     "litellm>=1.75.7",
