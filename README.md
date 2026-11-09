@@ -162,6 +162,16 @@ model.leaderboard("human")
 
 `add_observation` calls are order-independent, so you can stream in sessions as they complete and re-solve at any time via `rate()`/`leaderboard()`. `k` (the conservative-score penalty) is configurable, as is `sigma_mode`: `"exact"` (default) solves for `sigma` exactly and is fine for the hundreds-to-thousands of agents/humans a typical study produces, while `"hutchinson"` trades exactness for a stochastic estimator (tune with `hutch_probes`/`hutch_seed`) that scales to much larger entity pools. We used this exact model to derive the skill ladders in the CollabSkill paper from the [collaboration trajectories dataset](https://huggingface.co/datasets/SALT-NLP/cogym-collabskill-trajectories) (386 sessions, 93 workers, 5 agents, 10 O*NET occupational sectors) — see `tests/test_collabskill.py::test_reproduces_released_collabskill_ratings` for a full reproduction.
 
+The defaults (`mu0=0, sigma0=1, beta=1`) assume scores on a unit scale. For scores on another scale (for example the 0-100 grader scores in the trajectories dataset), fit the hyperparameters to your observations first; `fit_hyperparameters()` maximizes the marginal likelihood over `mu0`, `sigma0` and `beta` (numpy only). To compare entities, `win_probability(a, b)` and `rank_probabilities()` use the joint posterior, including the covariance between agents that share humans:
+
+```python
+model.fit_hyperparameters()            # on the released sessions: beta ~ 20.3, sigma0 ~ 10.2
+model.win_probability("cowork", "claude_code")   # P(s_cowork > s_claude_code)
+model.rank_probabilities("agent")["cowork"]      # {"mean_rank": ..., "p_first": ..., "p_rank": [...]}
+```
+
+On the released sessions, the fitted model gives Claude Cowork a 0.71 probability of ranking first (mean rank 1.35), in line with the paper's 10,000-round bootstrap (0.713, 1.36). With the unit-scale defaults the same call returns 1.0, because `beta=1` treats each 0-100 session score as accurate to about one point.
+
 
 ## Add a New Agent
 The current codebase supports three agents in `demo_agent/`:
