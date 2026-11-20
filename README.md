@@ -145,6 +145,14 @@ Co-Gym analyzes the collaboration process along the following dimensions:
 - **Controlled Autonomy:** We measure this dimension by (1) counting the agent's confirmation questions that effectively elicit a human response and (2) counting instances where the human verbally intervenes to halt the agent's actions.
   - To compute, run: `python -m collaborative_gym.eval.controlled_autonomy --result-dir {result_dir_that_include_result_folder_for_each_instance}`
 
+### Reviewing Human Contributions (Experimental)
+
+To inspect how a person's criterion or reasoning reaches subsequent work, the
+[contribution review guide](docs/contribution_review.md) provides an offline
+packet exporter and eight synthetic calibration cases. Packets retain actions,
+their outcomes, and public workspace states for evidence-based manual annotation;
+they do not automatically score collaboration or change existing metrics.
+
 ### CollabSkill: Decoupling Human and Agent Contributions
 A single task score conflates how much of the outcome came from the agent versus the human. [`collaborative_gym.eval.collabskill`](collaborative_gym/eval/collabskill.py) implements **CollabSkill** ([paper](https://arxiv.org/abs/2606.09833)), a TrueSkill-style Bayesian rating system that treats every session score as `y = skill_agent + skill_human + noise` and solves for each agent's and human's latent skill separately, so agents and humans end up on independent, comparable skill ladders. The usage pattern mirrors the [`trueskill`](https://pypi.org/project/trueskill/) package:
 
